@@ -94,6 +94,7 @@ class MainActivity : FragmentActivity() {
         lockGate.onStart()
         container.enterForeground()
         container.connectAll() // background: the cache is already on screen
+        container.checkForUpdates() // at most once a day
     }
 
     override fun onStop() {

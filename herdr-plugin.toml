@@ -1,10 +1,12 @@
 # Manifest for `herdr plugin install froid1911/whistle` (repo root = plugin
-# root). The build step compiles the bridge with the local Go toolchain into
-# bridge/plugin/bin/. Same as bridge/plugin/herdr-plugin.toml with paths
+# root). The build step downloads the prebuilt bridge for this version from
+# the GitHub release (v<version>, sha256-verified) into bridge/plugin/bin/,
+# falling back to a local Go build. `version` must equal the release tag.
+# Same as bridge/plugin/herdr-plugin.toml with paths
 # prefixed by bridge/plugin/ (kept in sync by TestRootManifestInSync).
 id = "whistle.bridge"
 name = "Whistle bridge"
-version = "0.3.1"
+version = "0.6.0"
 min_herdr_version = "0.9.5"
 description = "Serves a herdr session to the Whistle Android app over Tailscale (sessions.conf picks the port, auth.conf who may connect; phones pair with the pair action)."
 platforms = ["linux", "macos"]

@@ -19,6 +19,18 @@ val releaseStorePassword = signingValue("WHISTLE_KEYSTORE_PASSWORD", "storePassw
 val releaseKeyAlias = signingValue("WHISTLE_KEY_ALIAS", "keyAlias")
 val releaseKeyPassword = signingValue("WHISTLE_KEY_PASSWORD", "keyPassword")
 val hasReleaseSigning = listOf(releaseStoreFile, releaseStorePassword, releaseKeyAlias, releaseKeyPassword).all { it != null }
+// CI release builds pass -PwhistleRequireSigning=true: no silent fallback to the debug key there.
+if (providers.gradleProperty("whistleRequireSigning").orNull == "true" && !hasReleaseSigning) {
+    throw GradleException("Release signing required but WHISTLE_KEYSTORE* / keystore.properties are not set")
+}
+
+// Version: defaults for local builds; the release workflow passes -PwhistleVersionName=<tag without v>.
+// versionCode follows from the version (major*10000 + minor*100 + patch) unless -PwhistleVersionCode is given.
+val whistleVersionName: String = providers.gradleProperty("whistleVersionName").orNull ?: "0.6.0"
+val whistleVersionCode: Int = providers.gradleProperty("whistleVersionCode").orNull?.toInt()
+    ?: Regex("""^(\d+)\.(\d+)\.(\d+)""").find(whistleVersionName)?.destructured
+        ?.let { (ma, mi, pa) -> ma.toInt() * 10000 + mi.toInt() * 100 + pa.toInt() }
+    ?: throw GradleException("whistleVersionName must start with MAJOR.MINOR.PATCH: $whistleVersionName")
 
 android {
     namespace = "dev.whistle.app"
@@ -29,8 +41,8 @@ android {
         applicationId = "dev.whistle.app"
         minSdk = 29
         targetSdk = 36
-        versionCode = 11
-        versionName = "0.5.1"
+        versionCode = whistleVersionCode
+        versionName = whistleVersionName
     }
 
     signingConfigs {
@@ -58,6 +70,7 @@ android {
     }
     buildFeatures {
         compose = true
+        buildConfig = true
     }
     testOptions {
         unitTests.isReturnDefaultValues = true

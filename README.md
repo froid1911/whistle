@@ -7,8 +7,17 @@ are working or waiting for you, read their conversations as chat, answer
 approval prompts, send prompts (typed or dictated), share files and screenshots
 into an agent, and drop into a live terminal when you need one.
 
-Status: early (app 0.5.0, bridge plugin 0.3.1). Tested with herdr 0.9.5 on
-Linux and a Pixel phone.
+Status: early (0.6.0: app and bridge plugin are released together). Tested with
+herdr 0.9.5 on Linux and a Pixel phone.
+
+## Quick start
+
+1. **Server** (Linux or macOS with herdr 0.9.5+ and Tailscale):
+   `herdr plugin install froid1911/whistle` (no Go needed, see below).
+2. **Phone**: install the app from the
+   [latest release](https://github.com/froid1911/whistle/releases/latest)
+   (`whistle-<version>.apk`), or through Obtainium for automatic updates.
+3. **Pair**: in herdr run "Whistle: pair a phone", scan the QR code in the app.
 
 ## How it works
 
@@ -49,23 +58,32 @@ More in [SECURITY.md](SECURITY.md).
 ## Requirements
 
 - herdr **0.9.5 or newer** on the server (Linux or macOS).
-- Go (version in `bridge/go.mod`) on the server for `herdr plugin install`,
-  or build the bridge elsewhere and link it (below).
+- `curl` (or `wget`) and `sha256sum` (or `shasum`) on the server for
+  `herdr plugin install`; Go (version in `bridge/go.mod`) only to build from
+  source or on platforms without a prebuilt binary.
 - Tailscale on the server and on the phone, same tailnet.
 - Android 10 (API 29) or newer.
 
 ## Install the herdr plugin
 
-From GitHub (herdr clones the repo, runs the build step, which compiles
-`bridge/` with your Go toolchain into `bridge/plugin/bin/`):
+From GitHub:
 
 ```sh
 herdr plugin install froid1911/whistle
 ```
 
+herdr clones the repo and runs the build step
+(`bridge/plugin/scripts/install.sh`): it downloads the prebuilt
+`whistle-bridge_<version>_<os>_<arch>.tar.gz` (linux/darwin, amd64/arm64) for
+the manifest's version from the matching GitHub release, verifies it against
+the release's `SHA256SUMS` and installs `bridge/plugin/bin/whistle-bridge`. If
+there is no release binary for your platform, or the download or checksum
+fails, it builds from source with Go when available, and otherwise stops with
+an error (nothing unverified is installed). `WHISTLE_BUILD_FROM_SOURCE=1`
+forces the Go build.
+
 The repo-root `herdr-plugin.toml` is the manifest for this; `bridge/plugin/`
-holds the same manifest for linked installs. Note: while the repository is
-private, the install only works where `git clone` of it is authenticated.
+holds the same manifest for linked installs.
 
 Or from a clone (`plugin link` never builds, so build first):
 
@@ -114,6 +132,29 @@ command = "whistle.bridge.devices"
 description = "Whistle: devices"
 ```
 
+## Install the app
+
+- **Direct download**: `whistle-<version>.apk` from the
+  [latest release](https://github.com/froid1911/whistle/releases/latest).
+  Open it on the phone and allow installs from your browser once.
+- **[Obtainium](https://github.com/ImranR98/Obtainium)** (installs and updates
+  apps from GitHub releases): Add app → `https://github.com/froid1911/whistle`.
+- **Update check**: Whistle asks GitHub (`api.github.com`, no account, once a
+  day) whether a newer release exists and shows a "Whistle x.y.z is available"
+  card with a download link. It never downloads or installs anything itself.
+  Turn it off in Settings → "Check for updates".
+
+Releases are signed with the Whistle release key. Certificate SHA-256:
+
+```
+CB:3C:B4:51:E3:50:4D:37:2D:8E:19:9E:A5:45:6D:33:94:39:2F:98:9C:0A:77:F4:27:C7:A4:14:5E:EA:62:60
+```
+
+Check a download with `apksigner verify --print-certs whistle-<version>.apk`.
+Android only updates an app signed with the same key, so a self-built or
+older debug-signed Whistle must be uninstalled once before installing a
+release build (re-pair afterwards).
+
 ## Build the app
 
 Needs JDK 17+ and the Android SDK (`android/local.properties` with
@@ -131,13 +172,20 @@ Release signing reads, in this order, environment variables or a gitignored
 
 | Env var | `keystore.properties` key |
 |---|---|
-| `WHISTLE_KEYSTORE` (path, relative to `android/`) | `storeFile` |
+| `WHISTLE_KEYSTORE` (path, absolute or relative to `android/`) | `storeFile` |
 | `WHISTLE_KEYSTORE_PASSWORD` | `storePassword` |
 | `WHISTLE_KEY_ALIAS` | `keyAlias` |
 | `WHISTLE_KEY_PASSWORD` | `keyPassword` |
 
 Without them, `assembleRelease` still succeeds but signs with the local debug
-key: fine for sideloading your own build, not for distribution.
+key: fine for sideloading your own build, not for distribution
+(`-PwhistleRequireSigning=true` turns that fallback into an error; the release
+workflow uses it). The version defaults to the one in
+`android/app/build.gradle.kts`; `-PwhistleVersionName=X.Y.Z` overrides it and
+the versionCode follows (`X*10000 + Y*100 + Z`).
+
+Releases are built by GitHub Actions from a `vX.Y.Z` tag; see
+[docs/RELEASING.md](docs/RELEASING.md).
 
 ## Build and test the bridge
 

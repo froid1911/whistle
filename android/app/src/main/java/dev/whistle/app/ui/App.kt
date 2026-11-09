@@ -1,5 +1,7 @@
 package dev.whistle.app.ui
 
+import dev.whistle.app.ui.update.UpdateCard
+import dev.whistle.app.ui.update.UpdateCardPadding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import kotlinx.coroutines.flow.filterNotNull
@@ -106,6 +108,7 @@ fun HerdrNavHost(
                 onPair = { nav.navigate(PairRoute()) { launchSingleTop = true } },
                 onRemove = { container.removeMachine(it.id) },
                 newId = container.machines::newId,
+                notice = { UpdateCard(container.updates, UpdateCardPadding) },
             )
         }
         composable<WorkspacesRoute> { entry ->
@@ -125,6 +128,7 @@ fun HerdrNavHost(
                     snippets = container.snippets,
                     onOpenSnippets = { nav.navigate(SnippetsRoute) { launchSingleTop = true } },
                     onOpenSecurity = { nav.navigate(SecurityRoute) { launchSingleTop = true } },
+                    notice = { UpdateCard(container.updates, UpdateCardPadding) },
                 )
             }
         }
@@ -164,7 +168,7 @@ fun HerdrNavHost(
                 cameraPermitted = { cameraGranted(ctx) },
             )
         }
-        composable<SecurityRoute> { SecurityScreen(container.appLock, onBack = { nav.popBackStack() }) }
+        composable<SecurityRoute> { SecurityScreen(container.appLock, container.updates, onBack = { nav.popBackStack() }) }
         composable<SnippetsRoute> { SnippetsScreen(container.snippets, onBack = { nav.popBackStack() }) }
         composable<TerminalRoute> { entry ->
             val r = entry.toRoute<TerminalRoute>()

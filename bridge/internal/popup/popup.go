@@ -435,6 +435,13 @@ type layout struct {
 
 const quadNote = "compact QR — hold phone a bit further away"
 
+// Where to get the app (pairing popup footer, and a small QR when there is room).
+const (
+	downloadURL  = "https://github.com/froid1911/whistle/releases/latest"
+	downloadText = "No Whistle yet? github.com/froid1911/whistle/releases/latest"
+	downloadGap  = 4 // columns between the pairing QR and the download QR
+)
+
 // qrSize returns the module count (incl. quiet zone) of the QR for text.
 func qrSize(text string) int {
 	q, err := qrcode.New(text, qrcode.Low)
@@ -452,7 +459,7 @@ func chooseLayout(w, h, n, linkLen int) layout {
 		return layout{kind: qrNone}
 	}
 	linkLines := (linkLen + max(w-2, 1) - 1) / max(w-2, 1)
-	fullText := 2 + 1 + 1 + 2 + linkLines + 2 // head, gaps, status+code, link, hint+esc
+	fullText := 2 + 1 + 1 + 2 + linkLines + 3 // head, gaps, status+code, link, hint+esc, download
 	if n <= w && (n+1)/2+fullText <= h {
 		return layout{qrHalf, true}
 	}
@@ -499,6 +506,8 @@ func pairScreen(t server.PairingToken, w, h int, left string) string {
 			"",
 			status,
 			dimStyle.Render("Esc to cancel"),
+			"",
+			wrap(dimStyle.Render(downloadText), max(w-2, 20)),
 		}, "\n")
 	}
 	qr := strings.Join(renderQR(t.URI, lay.kind == qrQuad, true), "\n")
@@ -514,8 +523,25 @@ func pairScreen(t server.PairingToken, w, h int, left string) string {
 		foot = append(foot, dimStyle.Render(quadNote))
 	}
 	foot = append(foot, dimStyle.Render("In Whistle: Machines → Pair a machine → scan  ·  Esc to cancel"))
+	if lay.kind == qrHalf {
+		qr = withDownloadQR(qr, n, w)
+	}
+	foot = append(foot, wrap(dimStyle.Render(downloadText), max(w-2, 20)))
 	return titleStyle.Render("Pair a phone with Whistle") + "\n" + t.Name + dimStyle.Render("  ·  ") + t.Addr +
 		"\n\n" + qr + "\n\n" + strings.Join(foot, "\n")
+}
+
+// withDownloadQR puts a small QR for the app download to the right of the
+// pairing QR (n modules wide) when both fit in w columns side by side and the
+// download QR plus its caption is no taller than the pairing QR. The pairing
+// QR always comes first: otherwise qr is returned unchanged.
+func withDownloadQR(qr string, n, w int) string {
+	m := qrSize(downloadURL)
+	if m == 0 || n+downloadGap+m > w || (m+1)/2+2 > (n+1)/2 {
+		return qr
+	}
+	side := append(renderQR(downloadURL, false, true), dimStyle.Render("No Whistle yet?"), dimStyle.Render("Scan to download"))
+	return lipgloss.JoinHorizontal(lipgloss.Top, qr, strings.Repeat(" ", downloadGap), strings.Join(side, "\n"))
 }
 
 const quietZone = 2

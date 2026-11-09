@@ -8,7 +8,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -75,6 +75,7 @@ fun MachinesScreen(
     newId: () -> String,
     onOpenSecurity: () -> Unit = {},
     onPair: () -> Unit = {},
+    notice: @Composable () -> Unit = {},
 ) {
     var editing by remember { mutableStateOf<Machine?>(null) }
     Scaffold(
@@ -85,7 +86,7 @@ fun MachinesScreen(
                 title = "Machines",
                 actions = {
                     IconButton(onClick = onOpenSecurity) {
-                        Icon(Icons.Default.Lock, "Security", tint = Whistle.colors.sage)
+                        Icon(Icons.Default.Settings, "Settings", tint = Whistle.colors.sage)
                     }
                     IconButton(onClick = { editing = Machine(newId(), "", "http://") }) {
                         Icon(Icons.Default.Add, "Add machine", tint = Whistle.colors.wool)
@@ -98,65 +99,68 @@ fun MachinesScreen(
             FirstRun(onPair, Modifier.padding(pad).consumeWindowInsets(pad))
             return@Scaffold
         }
-        LazyColumn(
-            Modifier.padding(pad).consumeWindowInsets(pad).fillMaxSize(),
-            contentPadding = PaddingValues(start = 14.dp, end = 14.dp, top = 4.dp, bottom = 24.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp),
-        ) {
-            items(machines, key = { it.id }) { m ->
-                val conn by remember(m.id) { repo.connState(m.id) }.collectAsStateWithLifecycle()
-                val auth by remember(m.id) { repo.authProblem(m.id) }.collectAsStateWithLifecycle()
-                val c = Whistle.colors
-                WhistleCard(onClick = { onOpen(m) }, contentPadding = 0.dp) {
-                    Row(Modifier.padding(start = 14.dp, top = 12.dp, bottom = 12.dp, end = 4.dp), verticalAlignment = Alignment.CenterVertically) {
-                        Dot(
-                            when (conn) {
-                                ConnState.Synced -> c.diffAddFg
-                                ConnState.HerdrOffline -> c.ember
-                                ConnState.Offline -> c.moss
-                                else -> c.sky
-                            },
-                            size = 10.dp,
-                        )
-                        Spacer(Modifier.width(12.dp))
-                        Column(Modifier.weight(1f)) {
-                            Text(m.name, style = WhistleType.name, color = c.wool)
-                            Text("${m.baseUrl} · ${connLabel[conn]}", style = WhistleType.secondary, color = c.sage)
-                            Text(
-                                authStatusLabel(m),
-                                style = WhistleType.secondary,
-                                color = if (m.paired) c.sage else c.ember,
-                                modifier = Modifier.testTag("authStatus:${m.id}"),
+        Column(Modifier.padding(pad).consumeWindowInsets(pad).fillMaxSize()) {
+            notice()
+            LazyColumn(
+                Modifier.weight(1f).fillMaxWidth(),
+                contentPadding = PaddingValues(start = 14.dp, end = 14.dp, top = 4.dp, bottom = 24.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                items(machines, key = { it.id }) { m ->
+                    val conn by remember(m.id) { repo.connState(m.id) }.collectAsStateWithLifecycle()
+                    val auth by remember(m.id) { repo.authProblem(m.id) }.collectAsStateWithLifecycle()
+                    val c = Whistle.colors
+                    WhistleCard(onClick = { onOpen(m) }, contentPadding = 0.dp) {
+                        Row(Modifier.padding(start = 14.dp, top = 12.dp, bottom = 12.dp, end = 4.dp), verticalAlignment = Alignment.CenterVertically) {
+                            Dot(
+                                when (conn) {
+                                    ConnState.Synced -> c.diffAddFg
+                                    ConnState.HerdrOffline -> c.ember
+                                    ConnState.Offline -> c.moss
+                                    else -> c.sky
+                                },
+                                size = 10.dp,
                             )
+                            Spacer(Modifier.width(12.dp))
+                            Column(Modifier.weight(1f)) {
+                                Text(m.name, style = WhistleType.name, color = c.wool)
+                                Text("${m.baseUrl} · ${connLabel[conn]}", style = WhistleType.secondary, color = c.sage)
+                                Text(
+                                    authStatusLabel(m),
+                                    style = WhistleType.secondary,
+                                    color = if (m.paired) c.sage else c.ember,
+                                    modifier = Modifier.testTag("authStatus:${m.id}"),
+                                )
+                            }
+                            IconButton(onClick = { editing = m }) { Icon(Icons.Default.Edit, "Edit ${m.name}", tint = c.sage) }
                         }
-                        IconButton(onClick = { editing = m }) { Icon(Icons.Default.Edit, "Edit ${m.name}", tint = c.sage) }
-                    }
-                    val problem = auth
-                    if (problem != null || !m.paired) {
-                        Column(Modifier.padding(start = 14.dp, end = 14.dp, bottom = 12.dp).testTag("pairNudge:${m.id}")) {
-                            Text(
-                                problem?.message(m.name)
-                                    ?: "Any device of your Tailscale account can act as this phone. Pair it so only this phone can.",
-                                style = WhistleType.secondary,
-                                color = if (problem != null) c.ember else c.sage,
-                            )
-                            Spacer(Modifier.height(8.dp))
-                            PillButton(
-                                if (m.paired || problem != null) "Pair again" else "Pair this machine",
-                                onClick = onPair,
-                                style = PillStyle.Quiet,
-                            )
+                        val problem = auth
+                        if (problem != null || !m.paired) {
+                            Column(Modifier.padding(start = 14.dp, end = 14.dp, bottom = 12.dp).testTag("pairNudge:${m.id}")) {
+                                Text(
+                                    problem?.message(m.name)
+                                        ?: "Any device of your Tailscale account can act as this phone. Pair it so only this phone can.",
+                                    style = WhistleType.secondary,
+                                    color = if (problem != null) c.ember else c.sage,
+                                )
+                                Spacer(Modifier.height(8.dp))
+                                PillButton(
+                                    if (m.paired || problem != null) "Pair again" else "Pair this machine",
+                                    onClick = onPair,
+                                    style = PillStyle.Quiet,
+                                )
+                            }
                         }
                     }
                 }
-            }
-            item(key = "pair") {
-                PillButton(
-                    "Pair a machine",
-                    onClick = onPair,
-                    style = PillStyle.Wool,
-                    modifier = Modifier.padding(top = 8.dp).testTag("pairMachine"),
-                )
+                item(key = "pair") {
+                    PillButton(
+                        "Pair a machine",
+                        onClick = onPair,
+                        style = PillStyle.Wool,
+                        modifier = Modifier.padding(top = 8.dp).testTag("pairMachine"),
+                    )
+                }
             }
         }
     }

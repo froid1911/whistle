@@ -125,6 +125,7 @@ fun HerdScreen(
     snippets: SnippetRepository? = null,
     onOpenSnippets: () -> Unit = {},
     onOpenSecurity: () -> Unit = {},
+    notice: @Composable () -> Unit = {},
 ) {
     val source by remember(machine.id) { repo.herdSource(machine.id) }.collectAsStateWithLifecycle(null)
     val herd = remember(source, machine.name) { source?.let { (wss, panes) -> buildHerd(machine.name, wss, panes) } }
@@ -163,6 +164,7 @@ fun HerdScreen(
         herd = herd,
         approvals = approvals,
         snackbar = snackbar,
+        notice = notice,
         callbacks = HerdCallbacks(
             onOpenPane = onOpenPane,
             onOpenWorkspace = onOpenWorkspace,
@@ -227,6 +229,7 @@ fun HerdContent(
     callbacks: HerdCallbacks,
     snackbar: SnackbarHostState = remember { SnackbarHostState() },
     authProblem: String? = null,
+    notice: @Composable () -> Unit = {},
 ) {
     val c = Whistle.colors
     Scaffold(
@@ -238,6 +241,7 @@ fun HerdContent(
             HerdHeader(herd?.subline ?: machineName, callbacks)
             ConnBanner(conn)
             if (authProblem != null) AuthBanner(authProblem, onClick = callbacks.onOpenMachines)
+            notice()
             when {
                 herd == null -> Unit // first DB read in flight (a few ms)
                 herd.isEmpty -> EmptyHint(
@@ -273,7 +277,7 @@ private fun HerdHeader(subline: String, cb: HerdCallbacks) {
                 }
                 DropdownMenuItem(text = { Text("Snippets") }, onClick = { menu = false; cb.onOpenSnippets() })
                 DropdownMenuItem(text = { Text("Machines") }, onClick = { menu = false; cb.onOpenMachines() })
-                DropdownMenuItem(text = { Text("Security") }, onClick = { menu = false; cb.onOpenSecurity() })
+                DropdownMenuItem(text = { Text("Settings") }, onClick = { menu = false; cb.onOpenSecurity() })
             }
         }
     }

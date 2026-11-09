@@ -132,3 +132,45 @@ func fakeTok() server.PairingToken {
 	return server.PairingToken{Token: "YYHQ7CZP3HHWAWWQO72E5EIULY", Code: "YYHQ-7CZP-3HHW-AWWQ-O72E-5EIU-LY",
 		URI: testURI, Addr: "100.64.0.10:8787", Name: "myserver"}
 }
+
+func TestDownloadHint(t *testing.T) {
+	for _, c := range []struct {
+		w, h     int
+		line, qr bool
+	}{
+		{160, 50, true, true},
+		{120, 35, true, true},
+		{70, 40, true, false}, // full layout, no room for a second QR
+		{100, 30, false, false},
+		{50, 20, true, false}, // text fallback
+	} {
+		out := pairScreen(fakeTok(), c.w, c.h, "4:59")
+		if got := strings.Contains(out, "No Whistle yet?"); got != c.line {
+			t.Errorf("%dx%d: download line %v, want %v", c.w, c.h, got, c.line)
+		}
+		if got := strings.Contains(out, "Scan to download"); got != c.qr {
+			t.Errorf("%dx%d: download QR %v, want %v", c.w, c.h, got, c.qr)
+		}
+		if lipgloss.Height(out) > c.h || lipgloss.Width(out) > c.w {
+			t.Errorf("%dx%d: screen is %dx%d", c.w, c.h, lipgloss.Width(out), lipgloss.Height(out))
+		}
+	}
+	if !strings.Contains(pairScreen(fakeTok(), 160, 50, "4:59"), "github.com/froid1911/whistle/releases/latest") {
+		t.Error("download URL text missing")
+	}
+}
+
+func TestDownloadQRDecodes(t *testing.T) {
+	lines := renderQR(downloadURL, false, false)
+	bmp, err := gozxing.NewBinaryBitmapFromImage(raster(lines, false))
+	if err != nil {
+		t.Fatal(err)
+	}
+	res, err := gzqr.NewQRCodeReader().Decode(bmp, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if res.GetText() != downloadURL {
+		t.Errorf("decoded %q", res.GetText())
+	}
+}

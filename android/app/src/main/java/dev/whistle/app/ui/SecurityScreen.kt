@@ -38,16 +38,17 @@ import dev.whistle.app.ui.components.WhistleCard
 import dev.whistle.app.ui.components.WhistleTopBar
 import dev.whistle.app.ui.theme.Whistle
 import dev.whistle.app.ui.theme.WhistleType
+import dev.whistle.app.update.UpdateChecker
 
-/** App lock settings: when to lock again, and whether recents/screenshots may show content. */
+/** Settings: app lock (when to lock again, recents/screenshots) and the update check. */
 @Composable
-fun SecurityScreen(lock: AppLock, onBack: () -> Unit) {
+fun SecurityScreen(lock: AppLock, updates: UpdateChecker? = null, onBack: () -> Unit) {
     val s by lock.settings.collectAsStateWithLifecycle()
     val c = Whistle.colors
     Scaffold(
         containerColor = c.night,
         contentWindowInsets = WindowInsets(0),
-        topBar = { WhistleTopBar("Security", onBack = onBack) },
+        topBar = { WhistleTopBar("Settings", onBack = onBack) },
     ) { pad ->
         Column(
             Modifier.padding(pad).fillMaxSize().verticalScroll(rememberScrollState()).navigationBarsPadding()
@@ -121,9 +122,49 @@ fun SecurityScreen(lock: AppLock, onBack: () -> Unit) {
                     )
                 }
             }
+            if (updates != null) {
+                val checkUpdates by updates.enabled.collectAsStateWithLifecycle()
+                SectionLabel("Updates")
+                WhistleCard {
+                    SwitchRow(
+                        title = "Check for updates",
+                        detail = "Once a day, asks GitHub (api.github.com) whether a newer Whistle release exists. " +
+                            "Nothing is downloaded or installed automatically.",
+                        checked = checkUpdates,
+                        onChange = updates::setEnabled,
+                        modifier = Modifier.testTag("checkUpdates"),
+                    )
+                }
+            }
             if (lock.deviceSecure) {
                 PillButton("Lock now", onClick = lock::lockNow, style = PillStyle.Outline, modifier = Modifier.testTag("lockNow"))
             }
         }
+    }
+}
+
+@Composable
+private fun SwitchRow(title: String, detail: String, checked: Boolean, onChange: (Boolean) -> Unit, modifier: Modifier = Modifier) {
+    val c = Whistle.colors
+    Row(
+        modifier.fillMaxWidth().toggleable(value = checked, role = Role.Switch, onValueChange = onChange),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Column(Modifier.weight(1f)) {
+            Text(title, style = WhistleType.body, color = c.wool)
+            Text(detail, style = WhistleType.secondary, color = c.sage)
+        }
+        Spacer(Modifier.width(12.dp))
+        Switch(
+            checked = checked,
+            onCheckedChange = null,
+            colors = SwitchDefaults.colors(
+                checkedThumbColor = c.night,
+                checkedTrackColor = c.wool,
+                uncheckedThumbColor = c.sage,
+                uncheckedTrackColor = c.card,
+                uncheckedBorderColor = c.line,
+            ),
+        )
     }
 }

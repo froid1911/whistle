@@ -158,8 +158,15 @@ func checkListen(addr string, insecure bool) error {
 	return nil
 }
 
+// version is set at release build time (-ldflags "-X main.version=...").
+var version = "dev"
+
 func main() {
 	log := slog.New(slog.NewTextHandler(os.Stderr, nil))
+	if len(os.Args) == 2 && (os.Args[1] == "version" || os.Args[1] == "-version" || os.Args[1] == "--version") {
+		fmt.Println("whistle-bridge", version)
+		return
+	}
 	if len(os.Args) > 1 && os.Args[1] == "plugin" {
 		os.Exit(pluginMain(os.Args[2:], log))
 	}

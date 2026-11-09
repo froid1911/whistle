@@ -1,6 +1,6 @@
 id = "whistle.bridge"
 name = "Whistle bridge"
-version = "0.3.1"
+version = "0.6.0"
 min_herdr_version = "0.9.5"
 description = "Serves a herdr session to the Whistle Android app over Tailscale (sessions.conf picks the port, auth.conf who may connect; phones pair with the pair action)."
 platforms = ["linux", "macos"]
@@ -8,9 +8,10 @@ platforms = ["linux", "macos"]
 # Plugin dir for `herdr plugin link` / `make plugin-deploy-*`. The repo-root
 # herdr-plugin.toml is the same manifest for `herdr plugin install` (kept in
 # sync by cmd/whistle-bridge TestRootManifestInSync).
-# `herdr plugin install` only; `herdr plugin link` never builds. Uses the local
-# Go toolchain when this dir sits inside the whistle repo, else the prebuilt
-# bin/whistle-bridge that `make plugin-deploy-*` copies in.
+# `herdr plugin install` only; `herdr plugin link` never builds. Downloads the
+# release binary for `version` (sha256-verified); else builds with Go when this
+# dir sits inside the whistle repo, else keeps the prebuilt bin/whistle-bridge
+# that `make plugin-deploy-*` copies in.
 [[build]]
 command = ["sh", "scripts/install.sh"]
 

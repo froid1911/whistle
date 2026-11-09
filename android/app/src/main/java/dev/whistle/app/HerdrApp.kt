@@ -20,6 +20,10 @@ import dev.whistle.app.protocol.PairResult
 import dev.whistle.app.protocol.Pairer
 import dev.whistle.app.protocol.RequestSigner
 import dev.whistle.app.security.KeystoreDeviceKeys
+import dev.whistle.app.update.GitHubReleases
+import dev.whistle.app.update.PrefsUpdateStore
+import dev.whistle.app.update.UpdateChecker
+import kotlinx.coroutines.launch
 import dev.whistle.app.ui.broadcast.Broadcaster
 import dev.whistle.app.ui.snippets.SnippetRepository
 import dev.whistle.app.ui.chat.DraftStore
@@ -83,6 +87,21 @@ class AppContainer(context: Context) {
     /** The app lock (process-wide; starts locked). */
     val appLock: AppLock by lazy {
         AppLock(PrefsLockStore(ctx.getSharedPreferences("herdr-security", Context.MODE_PRIVATE)), SystemClock::elapsedRealtime)
+    }
+
+    /** Daily "is there a newer release" check against api.github.com (Settings toggle, default on). */
+    val updates: UpdateChecker by lazy {
+        val releases = GitHubReleases(okHttp, "Whistle-Android/${BuildConfig.VERSION_NAME}")
+        UpdateChecker(
+            PrefsUpdateStore(ctx.getSharedPreferences("whistle-updates", Context.MODE_PRIVATE)),
+            BuildConfig.VERSION_NAME,
+            System::currentTimeMillis,
+        ) { releases.latest() }
+    }
+
+    /** On app start; asks GitHub at most once a day, silently. */
+    fun checkForUpdates() {
+        scope.launch { updates.checkIfDue() }
     }
 
     val snapshots: SnapshotStore by lazy { SnapshotStore(ctx.getSharedPreferences("herdr-widget", Context.MODE_PRIVATE)) }
