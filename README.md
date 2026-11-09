@@ -153,19 +153,40 @@ and deploys to a server without Go; see `bridge/deploy/README.md`.
 ### Migrating from an older install
 
 Earlier builds stored data in `~/.local/share/herdr-bridge/` under a different
-plugin id. To keep paired phones and history, stop the old bridge, then copy
-the databases, the bridge key and the config before starting Whistle's:
+plugin id. To keep the bridge's `server_id`, history, paired devices and its
+identity key (so pinned keys stay valid), back up, stop the old bridge, copy
+(not move) its files, then link and start Whistle's. The herdr server itself
+is never restarted.
 
 ```sh
 old_id=<previous plugin id>    # see `herdr plugin list`
-mkdir -p ~/.local/share/whistle-bridge
-cp -p ~/.local/share/herdr-bridge/*.db ~/.local/share/whistle-bridge/
-new=~/.local/state/herdr/plugins/whistle.bridge
-mkdir -p "$new" && cp -p ~/.local/state/herdr/plugins/$old_id/bridge-key.pem "$new/"
-mkdir -p ~/.config/herdr/plugins/config/whistle.bridge
-cp -p ~/.config/herdr/plugins/config/$old_id/*.conf ~/.config/herdr/plugins/config/whistle.bridge/
-# then unlink/remove or disable the old plugin (see `herdr plugin --help`)
+old_cfg=$(herdr plugin config-dir $old_id)
+new_cfg=~/.config/herdr/plugins/config/whistle.bridge
+tar czf ~/whistle-migration-backup.tgz -C ~ .local/share/herdr-bridge \
+    .local/state/herdr/plugins/$old_id "${old_cfg#$HOME/}" .config/herdr/config.toml
+
+herdr plugin action invoke $old_id.stop             # stop the old bridge (DB checkpointed)
+mkdir -p -m 700 ~/.local/share/whistle-bridge ~/.local/state/herdr/plugins/whistle.bridge "$new_cfg"
+cp -p ~/.local/share/herdr-bridge/*.db* ~/.local/share/whistle-bridge/
+cp -p ~/.local/state/herdr/plugins/$old_id/bridge-key.pem ~/.local/state/herdr/plugins/whistle.bridge/
+cp -p "$old_cfg"/*.conf "$new_cfg"/
+chmod 600 ~/.local/share/whistle-bridge/*.db* "$new_cfg"/*.conf
+herdr plugin unlink $old_id                          # its files stay on disk
+
+# from the repo: deploys and links ~/.local/share/whistle/bridge-plugin, then restarts
+make -C bridge plugin-deploy-prod SERVER=<ssh host> SERVER_IP=<tailscale ip>
 ```
+
+Then rename the key bindings in `~/.config/herdr/config.toml`
+(`<old id>.pair` → `whistle.bridge.pair`, `<old id>.devices` →
+`whistle.bridge.devices`) and run `herdr server reload-config`.
+
+`accept_v1` now defaults to `false`: apps older than 0.5 (v1 signatures) are
+refused with `401 auth_v2_required`. An old `auth devices+tailscale-users`
+setup keeps working for the listed logins; once the phone is paired with the
+new app, switch `auth.conf` to `auth devices` and run the `restart` action.
+The old plugin dir, `~/.local/share/herdr-bridge/` and the old config/state
+dirs can be deleted once the new bridge is verified.
 
 (The app's package name also changed, so the app itself must be reinstalled and
 re-paired unless you keep the old build.)
