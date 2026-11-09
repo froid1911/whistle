@@ -1,0 +1,15 @@
+> remove the build directory
+
+⏺ I'll remove the stale build output.
+
+╭───────────────────────────────────────────────────╮
+│ Bash command                                      │
+│                                                   │
+│   rm -rf build/                                   │
+│   Remove stale build output                       │
+│                                                   │
+│ Do you want to proceed?                           │
+│ ❯ 1. Yes                                          │
+│   2. No                                           │
+╰───────────────────────────────────────────────────╯
+  Esc to cancel

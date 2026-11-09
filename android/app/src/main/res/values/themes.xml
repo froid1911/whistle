@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Window theme: night background from the first frame (no white flash before Compose draws). -->
+    <style name="Theme.Whistle" parent="@android:style/Theme.Material.NoActionBar">
+        <item name="android:windowBackground">@color/whistle_night</item>
+        <item name="android:colorBackground">@color/whistle_night</item>
+    </style>
+</resources>

@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Night pasture: launcher background ("night") and the whistle ("lamp"). -->
+    <color name="whistle_night">#161D1A</color>
+    <color name="whistle_lamp">#F5A524</color>
+    <color name="whistle_mist">#EEF2EF</color>
+</resources>

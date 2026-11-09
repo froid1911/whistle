@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="Theme.Whistle" parent="@android:style/Theme.Material.Light.NoActionBar">
+        <item name="android:windowBackground">@color/whistle_mist</item>
+        <item name="android:colorBackground">@color/whistle_mist</item>
+    </style>
+</resources>

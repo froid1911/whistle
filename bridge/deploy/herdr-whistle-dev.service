@@ -1,0 +1,20 @@
+# Headless herdr server for the named dev session "whistle-dev".
+# Socket: ~/.config/herdr/sessions/whistle-dev/herdr.sock
+# Install: cp to ~/.config/systemd/user/ && systemctl --user daemon-reload && systemctl --user enable --now herdr-whistle-dev
+[Unit]
+Description=herdr headless server (session whistle-dev)
+
+[Service]
+Type=simple
+Environment=PATH=%h/.local/bin:/home/linuxbrew/.linuxbrew/bin:/home/linuxbrew/.linuxbrew/sbin:/usr/local/bin:/usr/bin:/bin
+Environment=SHELL=/bin/bash
+Environment=TERM=xterm-256color
+Environment=LANG=en_US.UTF-8
+WorkingDirectory=%h
+ExecStart=/home/linuxbrew/.linuxbrew/bin/herdr --session whistle-dev server
+ExecStop=/home/linuxbrew/.linuxbrew/bin/herdr --session whistle-dev server stop
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=default.target

@@ -1,0 +1,166 @@
+<!doctype html>
+<!-- Terminal page for the herdr app. Loads only local assets (xterm 5.5.0, addon-fit 0.10.0, addon-webgl 0.18.0). -->
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; font-src 'self'">
+<link rel="stylesheet" href="xterm.css">
+<style>
+  /* Commit Mono (OFL, assets/licenses/OFL-CommitMono.txt), bundled: no runtime downloads. */
+  @font-face { font-family: 'Commit Mono'; src: url('CommitMono-Regular.ttf') format('truetype'); }
+  html, body { margin: 0; padding: 0; background: #0F1412; }
+  /* Pane-size view: the terminal keeps its natural width (the WebView pans it); pinch changes
+     xterm's fontSize (Kotlin -> herdr.setFontSize), never the page scale. */
+  #t { display: inline-block; padding: 2px; }
+  /* Fit view: the terminal fills the viewport; addon-fit measures it. */
+  body.fit { overflow: hidden; }
+  body.fit #t { display: block; width: 100vw; height: 100vh; padding: 0; }
+  .xterm .xterm-viewport { overflow-y: hidden; }
+</style>
+<script src="xterm.js"></script>
+<script src="addon-fit.js"></script>
+<script src="addon-webgl.js"></script>
+</head>
+<body>
+<div id="t"></div>
+<script>
+(function () {
+  'use strict';
+  var K = window.HerdrTerm; // Kotlin side (@JavascriptInterface)
+  var FIT_FONT = 13;
+  var term = new Terminal({
+    scrollback: 0, // a mirror of the remote screen; the desktop pane owns history
+    fontSize: FIT_FONT,
+    fontFamily: 'monospace',
+    cursorBlink: false,
+    // Night pasture: inset background, wool cursor.
+    theme: { background: '#0F1412', foreground: '#BFD3C6', cursor: '#E8E3D6', cursorAccent: '#0F1412', selectionBackground: '#2C3A33' }
+  });
+  var fit = new FitAddon.FitAddon();
+  term.loadAddon(fit);
+  term.open(document.getElementById('t'));
+
+  // GPU renderer when available; on failure or a lost context xterm falls back to its DOM renderer.
+  (function loadWebgl() {
+    if (!window.WebglAddon) return;
+    try {
+      var gl = new WebglAddon.WebglAddon();
+      gl.onContextLoss(function () { try { gl.dispose(); } catch (e) {} });
+      term.loadAddon(gl);
+    } catch (e) { /* no WebGL: keep the default renderer */ }
+  })();
+
+  var fitMode = false;
+  var appCursor = false;
+  var queue = [];
+  var cols = term.cols, rows = term.rows; // size of the frames written so far
+  var scheduled = false;
+  var userFont = null; // font size the user pinched to (pane-size view); null = auto
+  var FONT_MS = 60; // at most one font re-layout per 60 ms while pinching
+  var lastFont = 0, fontTimer = null;
+
+  function decode(b64) {
+    var bin = atob(b64);
+    var u = new Uint8Array(bin.length);
+    for (var i = 0; i < bin.length; i++) u[i] = bin.charCodeAt(i);
+    return u;
+  }
+
+  // Pane-size view: the user's pinched size, else a font that fits the columns to the screen width.
+  function sizeFont() {
+    if (fitMode) return;
+    var fs = userFont;
+    if (fs === null) {
+      var w = document.documentElement.clientWidth - 4;
+      fs = Math.max(6, Math.min(14, Math.floor(w / (term.cols * 0.6))));
+    }
+    if (term.options.fontSize !== fs) {
+      term.options.fontSize = fs;
+      lastFont = Date.now();
+      K.onFont(fs);
+    }
+  }
+
+  function resizeTo(c, r) {
+    return function () { term.resize(c, r); sizeFont(); };
+  }
+
+  function reportMode() {
+    var m = !!term.modes.applicationCursorKeysMode;
+    if (m !== appCursor) { appCursor = m; K.onMode(m); }
+  }
+
+  // Frames are batched: all frames queued until the next animation frame are written together.
+  function flush() {
+    if (!scheduled) return;
+    scheduled = false;
+    var q = queue;
+    queue = [];
+    for (var i = 0; i < q.length; i++) {
+      var f = q[i]; // [b64, width, height, clear]
+      if (f[3]) term.write('\x1b[0m\x1b[H\x1b[2J'); // full frame / new session: it redraws all
+      if (f[1] > 0 && f[2] > 0 && (f[1] !== cols || f[2] !== rows)) {
+        // Resize in order: after the bytes already queued in xterm's write buffer are parsed.
+        cols = f[1]; rows = f[2];
+        term.write('', resizeTo(cols, rows));
+      }
+      term.write(decode(f[0]), i === q.length - 1 ? reportMode : undefined);
+    }
+  }
+
+  window.herdr = {
+    frames: function (list) {
+      for (var i = 0; i < list.length; i++) {
+        // A clear (full) frame redraws everything: frames still queued before it are redundant.
+        if (list[i][3]) queue = [];
+        queue.push(list[i]);
+      }
+      if (!scheduled) {
+        scheduled = true;
+        requestAnimationFrame(flush);
+        setTimeout(flush, 100); // rAF does not run while the page is hidden
+      }
+    },
+    // Switch layout to fit mode and report the size that fits the screen (Kotlin reopens with it).
+    proposeFit: function () {
+      herdr.setFit(true);
+      var d = fit.proposeDimensions();
+      if (d && d.cols > 0 && d.rows > 0) K.onFit(d.cols, d.rows);
+      else herdr.setFit(false);
+    },
+    setFit: function (on) {
+      if (on === fitMode) return;
+      fitMode = on;
+      document.body.classList.toggle('fit', on);
+      if (on) { term.options.fontSize = FIT_FONT; K.onFont(FIT_FONT); } else sizeFont();
+    },
+    focus: function () { term.focus(); },
+    // Pinch zoom (pane-size view): throttled so a pinch re-lays out at most every FONT_MS.
+    setFontSize: function (px) {
+      if (!(px >= 6 && px <= 20)) return;
+      userFont = px;
+      if (fontTimer !== null) return; // the pending apply picks up the latest size
+      var wait = FONT_MS - (Date.now() - lastFont);
+      if (wait <= 0) { sizeFont(); return; }
+      fontTimer = setTimeout(function () { fontTimer = null; sizeFont(); }, wait);
+    }
+  };
+
+  // Switch to the bundled Commit Mono once it has loaded (xterm re-measures cells on the change);
+  // until then, and if it never loads, the system monospace is used.
+  if (document.fonts && document.fonts.load) {
+    document.fonts.load('13px "Commit Mono"').then(function (faces) {
+      if (faces && faces.length) term.options.fontFamily = '"Commit Mono", monospace';
+    }, function () {});
+  }
+
+  term.onData(function (s) { K.onData(s); });
+  window.addEventListener('resize', sizeFont);
+  sizeFont();
+  K.onFont(term.options.fontSize);
+  K.onReady();
+})();
+</script>
+</body>
+</html>

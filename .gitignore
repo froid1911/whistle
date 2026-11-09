@@ -1,0 +1,24 @@
+# Build outputs
+build/
+bridge/bin/
+bridge/plugin/bin/
+dist/
+*.apk
+*.aab
+
+# Gradle / Kotlin / IDE
+.gradle/
+.kotlin/
+.idea/
+*.iml
+local.properties
+captures/
+
+# Signing (never commit)
+keystore.properties
+*.jks
+*.keystore
+
+# Local tooling
+.superpowers/
+.DS_Store

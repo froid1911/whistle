@@ -1,0 +1,5 @@
+{"type":"user","isSidechain":false,"uuid":"u1","timestamp":"2026-01-01T00:00:01.000Z","message":{"role":"user","content":"please fix the bug"}}
+{"type":"assistant","isSidechain":false,"uuid":"a1","timestamp":"2026-01-01T00:00:02.000Z","message":{"id":"m1","role":"assistant","content":[{"type":"thinking","thinking":"need to edit","signature":"x"}]}}
+{"type":"assistant","isSidechain":false,"uuid":"a2","timestamp":"2026-01-01T00:00:03.000Z","message":{"id":"m1","role":"assistant","content":[{"type":"text","text":"On it."}]}}
+{"type":"assistant","isSidechain":false,"uuid":"a3","timestamp":"2026-01-01T00:00:04.000Z","message":{"id":"m1","role":"assistant","content":[{"type":"tool_use","id":"toolu_1","name":"Edit","input":{"file_path":"/x.go","old_string":"a","new_string":"b"}}]}}
+{"type":"user","isSidechain":false,"uuid":"u2","timestamp":"2026-01-01T00:00:05.000Z","message":{"role":"user","content":[{"type":"tool_result","tool_use_id":"toolu_1","content":"edited ok","is_error":false}]}}

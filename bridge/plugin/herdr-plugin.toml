@@ -1,0 +1,76 @@
+id = "whistle.bridge"
+name = "Whistle bridge"
+version = "0.3.1"
+min_herdr_version = "0.9.5"
+description = "Serves a herdr session to the Whistle Android app over Tailscale (sessions.conf picks the port, auth.conf who may connect; phones pair with the pair action)."
+platforms = ["linux", "macos"]
+
+# Plugin dir for `herdr plugin link` / `make plugin-deploy-*`. The repo-root
+# herdr-plugin.toml is the same manifest for `herdr plugin install` (kept in
+# sync by cmd/whistle-bridge TestRootManifestInSync).
+# `herdr plugin install` only; `herdr plugin link` never builds. Uses the local
+# Go toolchain when this dir sits inside the whistle repo, else the prebuilt
+# bin/whistle-bridge that `make plugin-deploy-*` copies in.
+[[build]]
+command = ["sh", "scripts/install.sh"]
+
+# Runs in every session's server; sessions without a sessions.conf entry exit
+# at once. Takes over from a bridge already running for the session.
+[[startup]]
+command = ["bin/whistle-bridge", "plugin", "run"]
+
+[[actions]]
+id = "restart"
+title = "Whistle bridge: restart"
+description = "Replace this session's bridge with a fresh one (picks up a new binary)"
+contexts = ["global"]
+command = ["bin/whistle-bridge", "plugin", "run"]
+
+[[actions]]
+id = "status"
+title = "Whistle bridge: status"
+description = "Print pid, address and /v1/health of this session's bridge (see herdr plugin log list)"
+contexts = ["global"]
+command = ["bin/whistle-bridge", "plugin", "status"]
+
+[[actions]]
+id = "stop"
+title = "Whistle bridge: stop"
+description = "Stop this session's bridge until the next restart or server start"
+contexts = ["global"]
+command = ["bin/whistle-bridge", "plugin", "stop"]
+
+# Pairing: the actions open popup panes (below) running an interactive UI
+# that talks to this session's bridge over its control socket. Nothing is
+# printed to the plugin log. Scripts: bin/whistle-bridge plugin pair|devices|unpair ID.
+[[actions]]
+id = "pair"
+title = "Whistle: pair a phone"
+description = "Show a one-time pairing QR code (5 min, single use) and wait for the phone"
+contexts = ["global"]
+command = ["bin/whistle-bridge", "plugin", "open", "pair"]
+
+[[actions]]
+id = "devices"
+title = "Whistle: devices"
+description = "List paired phones; unpair one or pair another"
+contexts = ["global"]
+command = ["bin/whistle-bridge", "plugin", "open", "devices"]
+
+[[panes]]
+id = "pair"
+title = "Whistle: pair a phone"
+description = "Pairing QR code and live pairing status"
+placement = "popup"
+width = "95%"
+height = "95%"
+command = ["bin/whistle-bridge", "plugin", "popup", "pair"]
+
+[[panes]]
+id = "devices"
+title = "Whistle: devices"
+description = "Paired phones"
+placement = "popup"
+width = "95%"
+height = "95%"
+command = ["bin/whistle-bridge", "plugin", "popup", "devices"]

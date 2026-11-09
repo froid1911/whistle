@@ -1,0 +1,14 @@
+ omp  ~/projects/demo  main
+
+ You: add a --verbose flag
+
+ I'll add the flag to the CLI parser.
+
+ ▸ edit cmd/main.go
+   + flag.BoolVar(&verbose, "verbose", false, "verbose output")
+
+⠹ Working… (esc to interrupt)
+────────────────────────────────────────────────────
+> 
+────────────────────────────────────────────────────
+ claude-sonnet · 12.4k tokens · ctrl+c to exit
