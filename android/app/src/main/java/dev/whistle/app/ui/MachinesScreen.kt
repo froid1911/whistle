@@ -50,6 +50,10 @@ import dev.whistle.app.ui.components.PillButton
 import dev.whistle.app.ui.components.PillStyle
 import androidx.compose.foundation.layout.height
 import androidx.compose.ui.platform.testTag
+import androidx.compose.foundation.layout.size
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.style.TextAlign
+import dev.whistle.app.R
 
 private val connLabel = mapOf(
     ConnState.Offline to "offline",
@@ -59,7 +63,7 @@ private val connLabel = mapOf(
     ConnState.HerdrOffline to "herdr offline",
 )
 
-/** Machine switcher + add/edit. v1 ships with myserver only, but the list supports more. */
+/** Machine switcher + add/edit. With no machines yet it is the first-run screen ([FirstRun]). */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MachinesScreen(
@@ -90,6 +94,10 @@ fun MachinesScreen(
             )
         },
     ) { pad ->
+        if (machines.isEmpty()) {
+            FirstRun(onPair, Modifier.padding(pad).consumeWindowInsets(pad))
+            return@Scaffold
+        }
         LazyColumn(
             Modifier.padding(pad).consumeWindowInsets(pad).fillMaxSize(),
             contentPadding = PaddingValues(start = 14.dp, end = 14.dp, top = 4.dp, bottom = 24.dp),
@@ -159,6 +167,37 @@ fun MachinesScreen(
             onSave = { onSave(it); editing = null },
             onRemove = { onRemove(m); editing = null },
             onDismiss = { editing = null },
+        )
+    }
+}
+
+/** First run: nothing paired yet. One way forward: pair (scan the QR, enter the code or paste a whistle:// link). */
+@Composable
+private fun FirstRun(onPair: () -> Unit, modifier: Modifier = Modifier) {
+    val c = Whistle.colors
+    Column(
+        modifier.fillMaxSize().padding(horizontal = 32.dp).testTag("firstRun"),
+        verticalArrangement = Arrangement.Center,
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        Icon(painterResource(R.drawable.ic_whistle_tile), contentDescription = null, tint = c.lamp, modifier = Modifier.size(56.dp))
+        Spacer(Modifier.height(20.dp))
+        Text("No machines yet", style = WhistleType.title, color = c.wool, textAlign = TextAlign.Center)
+        Spacer(Modifier.height(10.dp))
+        Text(
+            "Run the Whistle bridge on your server and press Ctrl+Alt+W in herdr.",
+            style = WhistleType.body,
+            color = c.sage,
+            textAlign = TextAlign.Center,
+        )
+        Spacer(Modifier.height(28.dp))
+        PillButton("Pair a machine", onClick = onPair, style = PillStyle.Lamp, modifier = Modifier.testTag("pairMachine"))
+        Spacer(Modifier.height(10.dp))
+        Text(
+            "Scan the QR code, enter the code, or paste a whistle:// link.",
+            style = WhistleType.secondary,
+            color = c.sage,
+            textAlign = TextAlign.Center,
         )
     }
 }

@@ -15,7 +15,7 @@ class HerdTileService : TileService() {
         qsTile?.apply {
             label = tileLabel(s)
             state = if (s.synced && s.counts.working + s.counts.blocked > 0) Tile.STATE_ACTIVE else Tile.STATE_INACTIVE
-            if (Build.VERSION.SDK_INT >= 29) subtitle = staleLabel(s.counts, s.synced)
+            if (Build.VERSION.SDK_INT >= 29) subtitle = staleLabel(s.counts, s.synced, noMachines = s.noMachines)
             updateTile()
         }
     }

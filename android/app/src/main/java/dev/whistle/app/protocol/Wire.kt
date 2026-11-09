@@ -53,8 +53,6 @@ data class Machine(
     fun unpaired(): Machine = copy(deviceId = null, keyAlias = null, bridgeKey = null, deviceName = null)
 
     companion object {
-        val DEFAULT = Machine("myserver", "myserver", "http://100.64.0.10:8787")
-
         /** null if [url] is usable, else a human-readable reason. */
         fun baseUrlProblem(url: String): String? {
             val u = runCatching { URI(url.trim()) }.getOrNull() ?: return "not a URL"

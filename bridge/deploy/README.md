@@ -54,8 +54,9 @@ as `auth devices` when missing) picks the mode:
     auth devices+tailscale-users   # legacy: also unsigned requests from
     allow you@github               #   these Tailscale logins (no built-in default)
 
-    accept_v1 true                 # default: also accept older "Whistle v1" signatures
-    accept_v1 false                # v2 only (server challenge); v1 -> 401 auth_v2_required
+    accept_v1 false                # default: v2 only (server challenge); v1 -> 401 auth_v2_required
+    accept_v1 true                 # DEPRECATED, insecure: also accept "Whistle v1" signatures
+                                   #   (no server challenge, replayable); only for apps < 0.5
 
 Changing `auth.conf` needs a `restart` action to take effect.
 

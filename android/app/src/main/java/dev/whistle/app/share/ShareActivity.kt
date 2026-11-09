@@ -156,6 +156,8 @@ class AppShareBackend(private val c: AppContainer) : ShareBackend {
         }
 
     override fun machine(id: String): Machine? = c.machines.get(id)
+
+    override fun hasMachines(): Boolean = c.machines.machines.value.isNotEmpty()
 }
 
 @Composable
@@ -194,6 +196,10 @@ private fun ShareScreen(vm: ShareViewModel, onCancel: () -> Unit, onOpen: (Share
                     }
                 }
                 what.isEmpty() -> TextButton(onClick = onCancel) { Text("Close") }
+                panes.isEmpty() && !vm.hasMachines -> Column {
+                    Text("No machines paired yet. Open Whistle and pair a machine first.", color = Whistle.colors.sage)
+                    TextButton(onClick = onCancel) { Text("Close") }
+                }
                 panes.isEmpty() -> Text("No agent panes yet. Open herdr and start an agent first.")
                 else -> LazyColumn(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     items(panes, key = { it.machineId + "/" + it.pane.id }) { p ->

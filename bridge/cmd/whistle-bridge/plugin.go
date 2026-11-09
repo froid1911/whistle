@@ -187,10 +187,11 @@ const authConfDefault = `# whistle.bridge: who may connect (all sessions).
 #   auth devices                   paired devices only (default)
 #   auth devices+tailscale-users   legacy: also the Tailscale logins listed with
 #                                  "allow" (one or more lines, comma-separated)
-#   accept_v1 true|false           accept the older "Whistle v1" request
-#                                  signatures (no server challenge). Default
-#                                  true; set false once every paired app
-#                                  speaks v2 (Whistle 0.5+).
+#   accept_v1 true|false           DEPRECATED, INSECURE: also accept the
+#                                  older "Whistle v1" request signatures (no
+#                                  server challenge, replayable within 60 s).
+#                                  Default false; only for apps older than
+#                                  Whistle 0.5.
 # Pair a phone: "Whistle: pair a phone" in herdr's command list.
 auth devices
 `
@@ -203,7 +204,7 @@ type authConfig struct {
 }
 
 func parseAuthConf(r io.Reader) (authConfig, error) {
-	c := authConfig{mode: authDevices, acceptV1: true}
+	c := authConfig{mode: authDevices}
 	sc := bufio.NewScanner(r)
 	for n := 1; sc.Scan(); n++ {
 		line := strings.TrimSpace(sc.Text())
@@ -251,7 +252,7 @@ func loadAuthConf(dir string) (authConfig, error) {
 		if os.MkdirAll(dir, 0o700) == nil {
 			_ = os.WriteFile(p, []byte(authConfDefault), 0o600)
 		}
-		return authConfig{mode: authDevices, acceptV1: true}, nil
+		return authConfig{mode: authDevices}, nil
 	}
 	if err != nil {
 		return authConfig{}, err

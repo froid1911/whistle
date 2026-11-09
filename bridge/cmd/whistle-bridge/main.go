@@ -79,7 +79,7 @@ func parseFlags(args []string, home string) (options, error) {
 	fs.StringVar(&o.key, "key", "", "bridge identity key (default bridge-key.pem next to -db)")
 	fs.StringVar(&o.name, "name", "", "machine name shown when pairing (default: hostname)")
 	fs.StringVar(&o.herdrBin, "herdr", "", "herdr binary (default: linuxbrew herdr or PATH)")
-	fs.BoolVar(&o.acceptV1, "accept-v1", true, `accept "Whistle v1" signatures (no server challenge); turn off once every paired app speaks v2`)
+	fs.BoolVar(&o.acceptV1, "accept-v1", false, `DEPRECATED, insecure: also accept "Whistle v1" signatures (no server challenge, replayable); only for apps older than 0.5`)
 	fs.BoolVar(&o.insecure, "insecure-allow-all", false, "skip Tailscale auth (tests only; loopback addresses only)")
 	if err := fs.Parse(args); err != nil {
 		return o, err

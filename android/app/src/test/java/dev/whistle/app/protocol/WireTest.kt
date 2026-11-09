@@ -194,8 +194,8 @@ class WireTest {
 
     @Test
     fun machineWsUrl() {
-        assertEquals("ws://100.64.0.10:8787/v1/ws", Machine.DEFAULT.wsUrl)
-        assertEquals("myserver", Machine.DEFAULT.id)
+        assertEquals("ws://100.64.0.10:8787/v1/ws", Machine("m", "box", "http://100.64.0.10:8787").wsUrl)
+        assertEquals("ws://100.64.0.10:8787/v1/ws", Machine("m", "box", "http://100.64.0.10:8787/").wsUrl)
         assertNull(Machine.baseUrlProblem("http://100.64.0.10:8788"))
         assertTrue(Machine.baseUrlProblem("http://myserver:8787") != null)
         assertTrue(Machine.baseUrlProblem("http://100.64.0.10") != null)

@@ -63,4 +63,13 @@ class CountsTest {
         assertEquals(300, s3.counts.asOf)
         assertEquals(0, reduceSnapshot(null, p.map { Pane("m", "x", it) }, false, 50).counts.asOf)
     }
+
+    @Test fun noMachinesSaysPairOne() {
+        val prev = reduceSnapshot(null, listOf(Pane("m", "p", BLOCKED)), true, at(9, 0))
+        val s = reduceSnapshot(prev, emptyList(), false, at(9, 5), noMachines = true)
+        assertEquals(Snapshot(Counts(0, 0, 0, 0, 0), false, null, noMachines = true), s)
+        assertEquals("Herd: no machines", tileLabel(s, at(9, 5), utc))
+        assertEquals(WidgetLabel("no machines yet · pair one", true), widgetLabel(s, utc))
+        assertEquals("pair a machine", staleLabel(s.counts, s.synced, utc, noMachines = true))
+    }
 }

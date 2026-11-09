@@ -21,6 +21,8 @@ import dev.whistle.app.ui.theme.WhistleTheme
 import java.io.File
 import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.onNodeWithTag
+import androidx.compose.ui.test.onNodeWithText
 import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
 import dev.whistle.app.data.FakeClient
@@ -278,6 +280,16 @@ class ScreenshotTest {
             listOf(dev.whistle.app.protocol.Machine(M, "myserver", "http://100.64.0.1:8787")),
             repo, onOpen = {}, onSave = {}, onRemove = {}, newId = { "x" },
         )
+    }
+
+    @Test
+    fun machinesFirstRun() {
+        shot("machines-first-run") {
+            MachinesScreen(emptyList(), repo, onOpen = {}, onSave = {}, onRemove = {}, newId = { "x" })
+        }
+        compose.onNodeWithTag("firstRun").assertExists()
+        compose.onNodeWithText("Run the Whistle bridge on your server and press Ctrl+Alt+W in herdr.").assertExists()
+        compose.onNodeWithTag("pairMachine").assertExists()
     }
 
     @Test

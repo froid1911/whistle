@@ -28,10 +28,10 @@ class WidgetUpdater(
 ) {
     private val started = AtomicBoolean(false)
 
-    private data class Input(val panes: List<Pane>, val allSynced: Boolean)
+    private data class Input(val panes: List<Pane>, val allSynced: Boolean, val noMachines: Boolean = false)
 
     private fun input(): Flow<Input> = machines.machines.flatMapLatest { ms ->
-        if (ms.isEmpty()) flowOf(Input(emptyList(), false))
+        if (ms.isEmpty()) flowOf(Input(emptyList(), false, noMachines = true))
         else combine(
             ms.map { m ->
                 combine(repo.agentPanes(m.id), repo.connState(m.id)) { ps, st ->
@@ -45,19 +45,20 @@ class WidgetUpdater(
     @OptIn(FlowPreview::class)
     fun start() {
         if (!started.compareAndSet(false, true)) return
-        scope.launch { input().debounce(1_000).collect { publish(it.panes, it.allSynced) } }
+        scope.launch { input().debounce(1_000).collect { publish(it.panes, it.allSynced, it.noMachines) } }
     }
 
     /** One-shot from the cache (worker). */
     suspend fun publishFromCache(allSynced: Boolean) {
-        val panes = machines.machines.value.flatMap { m ->
+        val ms = machines.machines.value
+        val panes = ms.flatMap { m ->
             repo.agentPanes(m.id).first().map { Pane(m.id, it.id, it.agentStatus) }
         }
-        publish(panes, allSynced)
+        publish(panes, allSynced, ms.isEmpty())
     }
 
-    private suspend fun publish(panes: List<Pane>, allSynced: Boolean) {
-        val next = reduceSnapshot(store.read(), panes, allSynced, System.currentTimeMillis())
+    private suspend fun publish(panes: List<Pane>, allSynced: Boolean, noMachines: Boolean) {
+        val next = reduceSnapshot(store.read(), panes, allSynced, System.currentTimeMillis(), noMachines)
         store.write(next)
         refreshSurfaces(ctx)
     }

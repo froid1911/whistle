@@ -247,10 +247,13 @@ func TestParseAuthConf(t *testing.T) {
 	if err != nil || c.mode != authDevicesLegacy || len(c.allow) != 3 || c.allow[1] != "b@github" {
 		t.Fatal(c, err)
 	}
-	if c, err := parseAuthConf(strings.NewReader(authConfDefault)); err != nil || c.mode != authDevices || len(c.allow) != 0 || !c.acceptV1 {
+	if c, err := parseAuthConf(strings.NewReader(authConfDefault)); err != nil || c.mode != authDevices || len(c.allow) != 0 || c.acceptV1 {
 		t.Fatal(c, err)
 	}
 	if c, err := parseAuthConf(strings.NewReader("accept_v1 false\n")); err != nil || c.acceptV1 {
+		t.Fatal(c, err)
+	}
+	if c, err := parseAuthConf(strings.NewReader("accept_v1 true\n")); err != nil || !c.acceptV1 {
 		t.Fatal(c, err)
 	}
 	for _, bad := range []string{"auth tailscale\n", "allowed x\n", "accept_v1 no\n"} {

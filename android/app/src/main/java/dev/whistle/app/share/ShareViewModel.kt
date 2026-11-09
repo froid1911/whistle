@@ -41,6 +41,9 @@ interface ShareBackend {
     /** Agent panes across all machines (non-agent panes excluded). */
     fun agentPanes(): Flow<List<SharePane>>
     fun machine(id: String): Machine?
+
+    /** False on first run (nothing paired): the share sheet says so instead of "no agent panes". */
+    fun hasMachines(): Boolean = true
 }
 
 data class ImageFailure(val image: SharedImage, val message: String)
@@ -66,6 +69,8 @@ class ShareViewModel(
     private val drafts: DraftStore,
     private val scope: CoroutineScope,
 ) {
+    val hasMachines: Boolean get() = backend.hasMachines()
+
     private val _state = MutableStateFlow(ShareState())
     val state: StateFlow<ShareState> = _state.asStateFlow()
     val panes: Flow<List<SharePane>> get() = backend.agentPanes()

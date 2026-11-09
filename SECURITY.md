@@ -37,9 +37,10 @@ What protects the bridge:
 
 Known limits:
 
-- `auth.conf` still accepts the older `Whistle v1` signatures (no server
-  challenge; replayable within the timestamp window) by default for older
-  apps. Set `accept_v1 false` once all phones run app 0.5 or newer.
+- `accept_v1 true` in `auth.conf` (deprecated, insecure; off by default)
+  re-enables the older `Whistle v1` signatures (no server challenge;
+  replayable within the timestamp window) for apps older than 0.5. Leave it
+  off.
 - `auth devices+tailscale-users` (legacy) additionally trusts unsigned
   requests from listed Tailscale logins; avoid it.
 - Anyone who can unlock the phone and the app (if app lock is enabled) can

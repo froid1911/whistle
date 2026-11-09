@@ -12,7 +12,7 @@ import kotlinx.serialization.builtins.ListSerializer
 
 /**
  * The user's machines. Kept in SharedPreferences rather than the Room cache, which is dropped on
- * schema changes; this is configuration, not re-derivable data. Starts with [Machine.DEFAULT].
+ * schema changes; this is configuration, not re-derivable data. Starts empty (first run: pair a machine).
  */
 class MachineStore(private val prefs: SharedPreferences) {
     /** Pairing fields were added in 0.4.0; rows written before decode with them null (unpaired). */
@@ -48,10 +48,10 @@ class MachineStore(private val prefs: SharedPreferences) {
     fun newId(): String = UUID.randomUUID().toString()
 
     private fun load(): List<Machine> {
-        val raw = prefs.getString(KEY, null) ?: return listOf(Machine.DEFAULT)
+        val raw = prefs.getString(KEY, null) ?: return emptyList()
         return runCatching { WireJson.decodeFromString(serializer, raw) }.getOrNull()
             ?.map { Machine(it.id, it.name, it.baseUrl, it.deviceId, it.keyAlias, it.bridgeKey, it.deviceName) }
-            ?: listOf(Machine.DEFAULT)
+            ?: emptyList()
     }
 
     private fun save(list: List<Machine>) {
