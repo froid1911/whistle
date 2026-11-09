@@ -120,8 +120,9 @@ jobs:
           bt=$(ls -d "$ANDROID_HOME"/build-tools/* | sort -V | tail -n 1)
           apk=android/app/build/outputs/apk/release/app-release.apk
           "$bt/apksigner" verify --print-certs "$apk" | tee "$RUNNER_TEMP/certs.txt"
-          got=$(sed -n 's/^Signer #1 certificate SHA-256 digest: //p' "$RUNNER_TEMP/certs.txt")
-          [ "$got" = "$WHISTLE_CERT_SHA256" ] || { echo "::error::APK signed with $got, expected $WHISTLE_CERT_SHA256"; exit 1; }
+          # "Signer #1 certificate SHA-256 digest: …" or "V2 Signer: certificate SHA-256 digest: …"
+          got=$(sed -n 's/^.*[Ss]igner.*certificate SHA-256 digest: *//p' "$RUNNER_TEMP/certs.txt" | sort -u)
+          [ "$got" = "$WHISTLE_CERT_SHA256" ] || { echo "::error::APK signed with '$got', expected $WHISTLE_CERT_SHA256"; exit 1; }
           "$bt/aapt2" dump badging "$apk" | head -n 1 | grep -q "versionName='$VERSION'" || { echo "::error::APK versionName is not $VERSION"; exit 1; }
           mkdir -p dist
           cp "$apk" "dist/whistle-$VERSION.apk"
